@@ -53,7 +53,7 @@ This Repo aims to show how to construct a basic search engine using ElasticSerch
      3. Return documents for specific coordinates within a threshold of 1000km.
 
 ## Data used:
-- The indexed data are collected from `Ruters`:
+- The indexed data are collected from `Ruters collection`:
 ```
   Reuters-21578 text categorization test collection
                         Distribution 1.0
@@ -65,6 +65,8 @@ This Repo aims to show how to construct a basic search engine using ElasticSerch
                      lewis@research.att.com
 
 ```
+- The total number of JSON objects that can be extracted is approximately `20000` objects, __but I only inserted `9387` documents__.
+  
 - It has the following `Document-Internal Tags`:
   
 ```txt
