@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ES Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #1a0dab;
+        }
+
+        #searchContainer {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        #searchInput {
+            width: 60%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #dfe1e5;
+            border-radius: 24px;
+            outline: none;
+            box-shadow: 0 4px 6px rgba(32, 33, 36, 0.28);
+        }
+
+        #searchButton {
+            padding: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #1a0dab;
+            color: #ffffff;
+            border: none;
+            border-radius: 24px;
+        }
+
+        #searchResults {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        #searchResults li {
+            background-color: #fff;
+            border: 1px solid #dfe1e5;
+            margin: 10px 0;
+            padding: 20px;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(60, 64, 67, 0.15), 0 4px 6px rgba(60, 64, 67, 0.3);
+            transition: box-shadow 0.2s ease;
+        }
+
+        #searchResults li:hover {
+            box-shadow: 0 2px 4px rgba(60, 64, 67, 0.3), 0 8px 12px rgba(60, 64, 67, 0.6);
+        }
+
+        #searchResults strong {
+            color: #1a0dab;
+        }
+
+        #searchResults small {
+            color: #70757a;
+        }
+        .google-card {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin: 10px;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-row {
+        margin-bottom: 5px;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="searchContainer">
+        <input type="text" id="searchInput" placeholder="Type your query">
+        <button id="searchButton" onclick="performSearch()">Search</button>
+    </div>
+    <ul id="searchResults"></ul>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#searchInput').on('input', function () {
+                var query = $(this).val();
+
+                if (query.length >= 3) {
+                    performAutocomplete();
+                }
+            });
+
+            function performAutocomplete() {
+    var query = $('#searchInput').val();
+
+    // Send AJAX request to the backend for autocomplete suggestions
+    $.ajax({
+        url: '/autocomplete',
+        type: 'GET',
+        data: { query: query },
+        success: function (data) {
+            // Update the UI with autocomplete suggestions
+            var resultsList = $('#searchResults');
+            resultsList.empty();
+
+            data.hits.forEach(function (hit) {
+                var resultItem = $('<li>').html(hit._source.title);
+
+                // Add click event listener to each autocomplete result
+                resultItem.click(function () {
+                    // Set the search input value to the clicked suggestion
+                    $('#searchInput').val(hit._source.title);
+
+                    // Trigger the search as if the user performed a regular search
+                    performSearch();
+                });
+
+                resultsList.append(resultItem);
+            });
+        }
+    });
+}
+
+            window.performSearch = function () {
+    var query = $('#searchInput').val();
+    console.log(query);
+
+    if (query.length >= 2) {
+        // Send AJAX request to the backend for search results
+        $.ajax({
+            url: 'http://localhost:3002/search',
+            type: 'GET',
+            data: { query: query },
+            success: function (data) {
+                console.log('Search results:', data);
+
+                var resultsList = $('#searchResults');
+                resultsList.empty();
+
+                data.forEach(function (hit) {
+                    var resultItem = $('<li>');
+
+                    // Display title in big bold font
+                    var titleElement = $('<div>').html('<strong>' + hit._source.title + '</strong>').appendTo(resultItem);
+
+                    // Display date, author, and score in small font
+                    var metadataElement = $('<div>').html(
+                        '<small>Date: ' + hit._source.date + ' | Author: ' + hit._source.authors + ' | Score: ' + hit._normalizedScore + '</small>'
+                    ).appendTo(resultItem);
+
+                    // Display snippet from the content with ellipsis
+                    var snippetElement = $('<div>').html(truncateText(hit._source.body, 150) + '...').appendTo(resultItem);
+
+                    // Add click event listener to each result item (to display the data...)
+                    resultItem.click(function () {
+                        // Clear previous content
+                        resultsList.empty();
+
+                        // Create a card for the selected result
+                        var cardContainer = $('<div>').addClass('google-card');
+
+                        // Iterate through each key-value pair in the source
+                        Object.keys(hit._source).forEach(function (key) {
+                            var cardRow = $('<div>').addClass('card-row');
+
+                            // Handle special cases for geopoint_author and temporal_expressions
+                            if (key === 'geopoint_author' || key === 'temporal_expressions' || key==="georeferences") {
+                                cardRow.append('<strong>' + key + ':</strong> ' + JSON.stringify(hit._source[key]));
+                            } else {
+                                cardRow.append('<strong>' + key + ':</strong> ' + hit._source[key]);
+                            }
+
+                            cardContainer.append(cardRow);
+                        });
+
+                        resultsList.append(cardContainer);
+                    });
+
+                    resultsList.append(resultItem);
+                });
+            },
+        });
+    }
+};
+
+            // Function to truncate text for snippet
+            function truncateText(text, maxLength) {
+                return text.length > maxLength ? text.substring(0, maxLength) : text;
+            }
+
+        });
+    </script>
+</body>
+
+</html>
